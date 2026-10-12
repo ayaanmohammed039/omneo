@@ -66,7 +66,9 @@ input {
   display: flex;
   flex-direction: column;
   background-color: var(--bg-canvas);
-  background-image: radial-gradient(circle at 50% 0%, rgba(218, 212, 197, 0.45) 0%, transparent 60%);
+  background-image:
+    radial-gradient(circle at 50% 0%, rgba(218, 212, 197, 0.45) 0%, transparent 60%),
+    radial-gradient(circle at 80% 40%, rgba(194, 109, 39, 0.03) 0%, transparent 50%);
 }
 
 /* Site Navbar */
@@ -75,7 +77,7 @@ input {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(247, 245, 240, 0.88);
+  background: rgba(247, 245, 240, 0.92);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
@@ -164,19 +166,19 @@ input {
 }
 
 /* =========================================================
-   LANDING PAGE STYLES
+   LANDING PAGE STYLES (EXPANDED & DEEP SCROLL)
    ========================================================= */
 
 .landing-container {
   max-width: 1140px;
   margin: 0 auto;
-  padding: 0 clamp(20px, 4vw, 48px) 80px;
+  padding: 0 clamp(20px, 4vw, 48px) 100px;
   width: 100%;
 }
 
 /* Hero Section */
 .hero-section {
-  padding: 80px 0 50px;
+  padding: 80px 0 60px;
   text-align: center;
 }
 
@@ -224,11 +226,11 @@ input {
   font-size: clamp(16px, 1.8vw, 19px);
   line-height: 1.6;
   color: var(--text-secondary);
-  max-width: 660px;
+  max-width: 680px;
   margin: 0 auto 40px;
 }
 
-/* The Single-Input Search Bar (Google / Perplexity simplicity) */
+/* Single-Input Search Box */
 .search-box-wrapper {
   max-width: 680px;
   margin: 0 auto;
@@ -242,7 +244,7 @@ input {
   border-radius: 14px;
   padding: 8px 10px 8px 18px;
   box-shadow:
-    0 10px 30px rgba(18, 19, 22, 0.06),
+    0 12px 36px rgba(18, 19, 22, 0.06),
     0 2px 6px rgba(18, 19, 22, 0.03);
   transition: all 0.2s ease;
 }
@@ -250,7 +252,7 @@ input {
 .search-box:focus-within {
   border-color: var(--text-primary);
   box-shadow:
-    0 14px 40px rgba(18, 19, 22, 0.1),
+    0 16px 44px rgba(18, 19, 22, 0.1),
     0 0 0 3px rgba(18, 19, 22, 0.05);
 }
 
@@ -341,10 +343,10 @@ input {
   background: var(--bg-surface-hover);
 }
 
-/* Engine Coverage Banner */
+/* FIXED: Engine Coverage Banner (No Text Clumping Glitch) */
 .engines-proof-banner {
   margin-top: 64px;
-  padding: 24px;
+  padding: 20px 24px;
   background: #ffffff;
   border: 1px solid var(--border-subtle);
   border-radius: 14px;
@@ -353,37 +355,442 @@ input {
   justify-content: space-between;
   gap: 20px;
   flex-wrap: wrap;
+  box-shadow: 0 2px 10px rgba(18, 19, 22, 0.02);
 }
 
 .engines-proof-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--text-muted);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   font-family: var(--font-mono);
+  white-space: nowrap;
 }
 
 .engine-tags-row {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 20px;
   flex-wrap: wrap;
 }
 
 .engine-tag {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.engine-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-sage);
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(45, 106, 79, 0.4);
+}
+
+.engine-name {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+/* SECTION 2: Interactive Simulation Comparison (2014 Google vs 2026 AI) */
+.simulation-section {
+  padding: 60px 0 30px;
+}
+
+.sim-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 32px;
+}
+
+.sim-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 4px 16px rgba(18, 19, 22, 0.03);
+  position: relative;
+}
+
+.sim-card.era-ai {
+  border: 2px solid var(--border-dark);
+}
+
+.sim-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+.sim-card.era-legacy .sim-badge {
+  background: var(--bg-canvas-subtle);
+  color: var(--text-muted);
+}
+
+.sim-card.era-ai .sim-badge {
+  background: var(--text-primary);
+  color: #ffffff;
+}
+
+.sim-card h3 {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0 0 12px;
+  color: var(--text-primary);
+}
+
+.sim-mockup {
+  background: var(--bg-canvas-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 16px;
+  margin: 16px 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.sim-mockup .google-link {
+  color: #1a0dab;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.sim-mockup .google-snippet {
+  color: var(--text-secondary);
+}
+
+.sim-mockup .ai-response-box {
+  background: #ffffff;
+  border: 1px solid var(--border-medium);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.sim-mockup .ai-answer-p {
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.sim-mockup .ai-citation-highlight {
+  background: var(--accent-amber-bg);
+  color: var(--accent-amber);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.sim-alert-banner {
+  background: var(--accent-coral-bg);
+  border: 1px solid rgba(201, 59, 43, 0.25);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--accent-coral);
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+/* SECTION 3: Key Market Metrics Grid */
+.metrics-section {
+  padding: 50px 0;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-top: 28px;
+}
+
+.metric-box {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 26px 20px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(18, 19, 22, 0.03);
+}
+
+.metric-stat {
+  font-family: var(--font-mono);
+  font-size: clamp(34px, 4vw, 44px);
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.metric-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.metric-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* SECTION 4: 4-Step Architecture Workflow */
+.workflow-section {
+  padding: 60px 0;
+}
+
+.workflow-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-top: 32px;
+}
+
+.workflow-step-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 28px 22px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.workflow-step-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-medium);
+}
+
+.step-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-amber);
+  margin-bottom: 14px;
+}
+
+.workflow-step-card h4 {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+  color: var(--text-primary);
+}
+
+.workflow-step-card p {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* SECTION 5: Real Brand Teardown Case Studies */
+.teardowns-section {
+  padding: 60px 0;
+}
+
+.teardowns-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 32px;
+}
+
+.teardown-item-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 28px 24px;
+  box-shadow: 0 4px 16px rgba(18, 19, 22, 0.03);
+  display: flex;
+  flex-direction: column;
+}
+
+.teardown-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--accent-sage);
+  margin-bottom: 12px;
+}
+
+.teardown-item-card h3 {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin: 0 0 10px;
+}
+
+.teardown-item-card p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0 0 18px;
+  flex: 1;
+}
+
+.teardown-stat-pill {
+  background: var(--bg-canvas-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.engine-tag span {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent-sage);
+/* SECTION 6: Traditional SEO vs AEO Table */
+.matrix-section {
+  padding: 60px 0;
+}
+
+.matrix-table-wrap {
+  margin-top: 32px;
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(18, 19, 22, 0.03);
+}
+
+.matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.matrix-table th {
+  background: var(--bg-surface-elevated);
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.matrix-table td {
+  padding: 18px 20px;
+  font-size: 13px;
+  line-height: 1.5;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.matrix-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.matrix-table td strong {
+  color: var(--text-primary);
+  display: block;
+}
+
+.matrix-table .col-aeo {
+  background: rgba(45, 106, 79, 0.02);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* SECTION 7: FAQ Accordion */
+.faq-section {
+  padding: 60px 0;
+}
+
+.faq-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.faq-item {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(18, 19, 22, 0.02);
+}
+
+.faq-trigger {
+  width: 100%;
+  padding: 20px 24px;
+  background: transparent;
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.faq-answer {
+  padding: 0 24px 20px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* SECTION 8: Bottom Call-To-Action (Secondary Search Box) */
+.bottom-cta-section {
+  padding: 80px 0 20px;
+  text-align: center;
+}
+
+.bottom-cta-box {
+  background: var(--text-primary);
+  border-radius: 24px;
+  padding: clamp(36px, 5vw, 64px) clamp(24px, 4vw, 48px);
+  color: #ffffff;
+  box-shadow: 0 20px 50px rgba(18, 19, 22, 0.2);
+}
+
+.bottom-cta-box h2 {
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0 0 16px;
+  color: #ffffff;
+}
+
+.bottom-cta-box p {
+  font-size: 16px;
+  color: #c0c4d0;
+  max-width: 600px;
+  margin: 0 auto 36px;
+  line-height: 1.6;
+}
+
+.bottom-cta-box .search-box {
+  background: #ffffff;
+  border: 0;
 }
 
 /* Landing Pillars (3 High-Value Cards) */
@@ -401,11 +808,18 @@ input {
 }
 
 .section-heading {
-  font-size: clamp(28px, 3.5vw, 40px);
+  font-size: clamp(28px, 3.5vw, 42px);
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--text-primary);
-  margin: 0 0 40px;
+  margin: 0 0 14px;
+}
+
+.section-subheading {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin: 0 0 36px;
+  max-width: 650px;
 }
 
 .pillars-grid {
@@ -782,9 +1196,20 @@ input {
 }
 
 /* Responsive */
-@media (max-width: 900px) {
-  .pillars-grid {
+@media (max-width: 950px) {
+
+  .pillars-grid,
+  .sim-grid,
+  .teardowns-grid {
     grid-template-columns: 1fr;
+  }
+
+  .workflow-steps-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .dash-main-grid {
@@ -805,6 +1230,14 @@ input {
     padding: 40px 0 30px;
   }
 
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-steps-grid {
+    grid-template-columns: 1fr;
+  }
+
   .dash-kpis {
     grid-template-columns: 1fr;
   }
@@ -818,5 +1251,10 @@ input {
   .search-submit-btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .engines-proof-banner {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
