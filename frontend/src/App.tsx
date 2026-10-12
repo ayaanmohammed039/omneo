@@ -228,7 +228,7 @@ export default function App() {
           {/* Hero Section */}
           <section className="hero-section">
             <h1 className="hero-title">
-              Does <span className="shadow-ai">AI</span> recommend your <span className="shadow-brand">brand</span>, or are <span className="shadow-competitors">competitors</span> <em>stealing the citation?</em>
+              Does AI recommend your brand, or are competitors <em>stealing the citation?</em>
             </h1>
 
             <p className="hero-sub">

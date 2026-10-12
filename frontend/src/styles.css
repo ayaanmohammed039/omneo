@@ -222,22 +222,6 @@ input {
   color: var(--accent-amber);
 }
 
-/* 0% Blur Drop Shadow on AI, brand, and competitors */
-.shadow-ai {
-  display: inline-block;
-  text-shadow: 3px 3px 0px var(--accent-sage);
-}
-
-.shadow-brand {
-  display: inline-block;
-  text-shadow: 3px 3px 0px var(--accent-amber);
-}
-
-.shadow-competitors {
-  display: inline-block;
-  text-shadow: 3px 3px 0px var(--accent-coral);
-}
-
 .hero-sub {
   font-size: clamp(16px, 1.8vw, 19px);
   line-height: 1.6;
