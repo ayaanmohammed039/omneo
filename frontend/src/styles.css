@@ -222,6 +222,68 @@ input {
   color: var(--accent-amber);
 }
 
+/* Unique Semantic Highlights in Hero Headline */
+.hl-ai {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  font-weight: 700;
+  background: #ffffff;
+  border: 1.5px solid var(--border-medium);
+  padding: 0 12px;
+  border-radius: 10px;
+  vertical-align: 0.05em;
+  box-shadow: 0 4px 14px rgba(18, 19, 22, 0.05);
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.hl-ai-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-sage);
+  display: inline-block;
+  box-shadow: 0 0 8px rgba(45, 106, 79, 0.6);
+  animation: pulse-dot 2.2s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+}
+
+.hl-brand {
+  position: relative;
+  display: inline-block;
+  background: linear-gradient(120deg, rgba(254, 240, 138, 0.7) 0%, rgba(253, 230, 138, 0.4) 100%);
+  padding: 0 8px;
+  border-radius: 6px;
+  color: var(--text-primary);
+  border-bottom: 2px solid rgba(194, 109, 39, 0.35);
+  box-shadow: 0 2px 8px rgba(194, 109, 39, 0.06);
+}
+
+.hl-competitors {
+  color: var(--accent-coral);
+  text-decoration: underline wavy rgba(201, 59, 43, 0.45);
+  text-underline-offset: 8px;
+  text-decoration-thickness: 2px;
+  display: inline-block;
+}
+
 .hero-sub {
   font-size: clamp(16px, 1.8vw, 19px);
   line-height: 1.6;
