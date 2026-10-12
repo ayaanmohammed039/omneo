@@ -228,11 +228,6 @@ export default function App() {
         <main className="landing-container">
           {/* Hero Section */}
           <section className="hero-section">
-            <div className="hero-pill">
-              <span className="hero-pill-dot" />
-              <span>THE GENERATIVE SEARCH SHIFT</span>
-            </div>
-
             <h1 className="hero-title">
               Does AI recommend your brand, or are competitors <em>stealing the citation?</em>
             </h1>
