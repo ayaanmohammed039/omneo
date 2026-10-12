@@ -187,7 +187,6 @@ export default function App() {
         <div className="brand-link" onClick={() => { setView('landing'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
           <div className="brand-mark">O</div>
           <span className="brand-name">Omneo</span>
-          <span className="brand-badge">AEO PLATFORM</span>
         </div>
 
         <nav className="nav-links">
