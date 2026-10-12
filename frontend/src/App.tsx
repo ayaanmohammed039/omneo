@@ -117,11 +117,6 @@ export default function App() {
     const category = inferCategory(cleanBrand);
 
     try {
-      if (cleanBrand.toLowerCase() === 'notion') {
-        await loadDemo(1);
-        return;
-      }
-
       const result = await runVisibilityScan(cleanBrand, category);
       setScan(result.scan);
       setHistory(result.memory);
