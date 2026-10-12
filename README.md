@@ -1,6 +1,6 @@
-# GEO Visibility Agent
+# Omneo — Generative Engine Optimization (AEO / GEO) Platform
 
-A single-folder demo of the scan → Hindsight memory → recommendation loop. It combines the AI pipeline, the Hindsight-compatible memory layer, and the React dashboard from the supplied ZIP. The data contracts match the team document and the project brief.
+**Omneo** is an AI search visibility intelligence platform that tracks brand citations, competitor mention rates, and recommendation memories across generative engines (ChatGPT, Perplexity, Gemini, Claude, and Google AI Overviews).
 
 ## 🛠️ Installation Instructions
 
