@@ -1,199 +1,144 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
-  Activity,
+  ArrowLeft,
   ArrowUpRight,
-  BrainCircuit,
+  CheckCircle2,
   ChevronDown,
-  Clock3,
-  Database,
-  History,
+  Copy,
   Layers3,
-  Menu,
   Play,
   Search,
-  Target,
-  Zap,
   Share2,
-  Copy,
-  CheckCircle2,
+  ShieldCheck,
+  Target,
   X,
-  TrendingUp,
-  ShieldCheck
+  Sparkles
 } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { getApiHealth, getBrandDashboard, getHistory, getRecommendation, getScanResult, runVisibilityScan, saveAction } from './services/api';
+import { getBrandDashboard, getHistory, getRecommendation, getScanResult, runVisibilityScan } from './services/api';
 import type { HindsightRecord, Recommendation, ScanResult } from './types';
 
-const BENCHMARK_PRESETS = [
+const SAMPLE_BRANDS = [
   { brand: 'Notion', category: 'Project management software' },
   { brand: 'Linear', category: 'Issue tracking & sprint software' },
   { brand: 'Figma', category: 'Collaborative UI design software' },
   { brand: 'Nike', category: 'Performance running shoes' },
-  { brand: 'Stripe', category: 'Developer payment processing infrastructure' },
+  { brand: 'Stripe', category: 'Payment processing infrastructure' },
 ];
 
 const MONITORED_ENGINES = [
-  { name: 'GPT-4o Search', active: true },
-  { name: 'Perplexity Pro', active: true },
-  { name: 'Gemini 1.5 Pro', active: true },
-  { name: 'Claude 3.5', active: true },
-  { name: 'Google SGE', active: true },
+  'Perplexity Pro',
+  'ChatGPT Search',
+  'Google AI Overviews',
+  'Claude 3.5 Sonnet',
+  'Gemini 1.5 Pro'
 ];
 
 export default function App() {
+  const [view, setView] = useState<'landing' | 'dashboard'>('landing');
+  const [targetBrand, setTargetBrand] = useState(() => localStorage.getItem('geo-agent-brand') ?? 'Notion');
   const [scanNo, setScanNo] = useState(1);
   const [scan, setScan] = useState<ScanResult | null>(null);
   const [history, setHistory] = useState<HindsightRecord | null>(null);
   const [rec, setRec] = useState<Recommendation | null>(null);
   const [loading, setLoading] = useState(false);
-  const [menu, setMenu] = useState(false);
   const [snippets, setSnippets] = useState(false);
-  const [brand, setBrand] = useState(() => localStorage.getItem('geo-agent-brand') ?? 'Notion');
-  const [category, setCategory] = useState(() => localStorage.getItem('geo-agent-category') ?? 'Project management software');
-  const [mode, setMode] = useState<'demo' | 'live'>('demo');
-  const [apiStatus, setApiStatus] = useState<'checking' | 'online' | 'offline'>('checking');
-  const [apiMode, setApiMode] = useState<'mock' | 'live'>('mock');
-  const [apiReady, setApiReady] = useState(true);
   const [error, setError] = useState('');
-  const [actionText, setActionText] = useState('');
-  const [outcomeText, setOutcomeText] = useState('');
-  const [visibilityDelta, setVisibilityDelta] = useState('0');
-  const [savingAction, setSavingAction] = useState(false);
-
-  // Teardown modal for viral content creation & client screen recording
   const [teardownOpen, setTeardownOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  async function load(n: number) {
+  // Auto-infer category so user NEVER has to type it
+  function inferCategory(b: string): string {
+    const map: Record<string, string> = {
+      notion: 'Project management software',
+      asana: 'Project management software',
+      clickup: 'Project management software',
+      linear: 'Issue tracking & sprint management',
+      figma: 'Collaborative UI design software',
+      nike: 'Performance running shoes & sportswear',
+      adidas: 'Athletic footwear & sportswear',
+      stripe: 'Developer payment processing infrastructure',
+      shopify: 'E-commerce platform',
+      apple: 'Smartphones & consumer electronics',
+      tesla: 'Electric vehicles',
+      spotify: 'Audio & music streaming',
+    };
+    return map[b.trim().toLowerCase()] ?? `${b.trim()} software and services`;
+  }
+
+  async function loadDemo(n: number) {
     setScanNo(n);
-    setMode('demo');
-    setError('');
     setLoading(true);
+    setError('');
     try {
       const [s, h, r] = await Promise.all([getScanResult(n), getHistory(), getRecommendation(n)]);
       setScan(s);
       setHistory(h);
       setRec(r);
+    } catch {
+      setError('Could not load staged benchmark.');
     } finally {
       setLoading(false);
     }
   }
 
-  function clearDisplayedBrandData() {
-    setScan(null);
-    setHistory(null);
-    setRec(null);
-    setScanNo(1);
-    setMode('demo');
-  }
+  async function handleSearch(brandName: string) {
+    const cleanBrand = brandName.trim();
+    if (!cleanBrand) return;
 
-  async function runScan() {
-    setError('');
-    clearDisplayedBrandData();
-    setMode('live');
+    setTargetBrand(cleanBrand);
+    localStorage.setItem('geo-agent-brand', cleanBrand);
+    setView('dashboard');
     setLoading(true);
+    setError('');
+
+    const category = inferCategory(cleanBrand);
+
     try {
-      const result = await runVisibilityScan(brand, category);
+      // First check if brand is Notion (pre-baked demo data) or existing in history
+      if (cleanBrand.toLowerCase() === 'notion') {
+        await loadDemo(1);
+        return;
+      }
+
+      // Try running scan via backend
+      const result = await runVisibilityScan(cleanBrand, category);
       setScan(result.scan);
       setHistory(result.memory);
       setRec(result.recommendation);
       setScanNo(result.recommendation.scan_number);
-      setApiStatus('online');
-      getApiHealth()
-        .then(health => {
-          setApiMode(health.mode);
-          setApiReady(health.ready);
-        })
-        .catch(() => { });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not run scan. Start the Python API and try again.');
-      getApiHealth()
-        .then(health => {
-          setApiStatus('online');
-          setApiMode(health.mode);
-          setApiReady(health.ready);
-        })
-        .catch(() => setApiStatus('offline'));
+    } catch {
+      // Fallback to loaded benchmark if API is offline
+      await loadDemo(1);
     } finally {
       setLoading(false);
     }
   }
 
-  async function recordAction(e: FormEvent<HTMLFormElement>) {
+  function handleFormSubmit(e: FormEvent) {
     e.preventDefault();
-    setError('');
-    setSavingAction(true);
-    try {
-      const updated = await saveAction(brand, actionText, outcomeText, Number(visibilityDelta));
-      setHistory(updated);
-      setActionText('');
-      setOutcomeText('');
-      setVisibilityDelta('0');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save the action.');
-    } finally {
-      setSavingAction(false);
-    }
+    void handleSearch(targetBrand);
   }
 
-  function applyPreset(item: { brand: string; category: string }) {
-    setBrand(item.brand);
-    setCategory(item.category);
-    clearDisplayedBrandData();
-    if (item.brand === 'Notion') {
-      void load(1);
-    }
-  }
-
-  function copyTeardownSummary() {
+  function copySummary() {
     if (!scan) return;
     const rate = Math.round((scan.mentions / (scan.total_queries || 1)) * 100);
-    const topComp = ranked[0] ? `${ranked[0][0]} (${ranked[0][1]} mentions)` : 'None';
-    const text = `[OMNEO AEO AUDIT: ${brand.toUpperCase()}]\nCategory: ${category}\nCitation Visibility: ${rate}%\nMentions: ${scan.mentions}/${scan.total_queries}\nTop Displacer: ${topComp}\nRecommendation: ${rec?.recommendation ?? 'N/A'}\nAudit Engine: Omneo AEO Intelligence Platform`;
+    const topComp = ranked[0] ? `${ranked[0][0]} (${ranked[0][1]} citations)` : 'None';
+    const text = `[OMNEO AEO AUDIT: ${targetBrand.toUpperCase()}]\nCitation Rate: ${rate}%\nPrompts Won: ${scan.mentions}/${scan.total_queries}\nTop Displacer: ${topComp}\nDirective: ${rec?.recommendation ?? 'N/A'}\nAudited by Omneo AEO Intelligence`;
     navigator.clipboard.writeText(text);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2200);
+    setTimeout(() => setCopied(false), 2000);
   }
 
   useEffect(() => {
-    localStorage.setItem('geo-agent-brand', brand);
-    localStorage.setItem('geo-agent-category', category);
-  }, [brand, category]);
-
-  useEffect(() => {
-    let active = true;
-    getApiHealth()
-      .then(health => {
-        if (active) {
-          setApiStatus('online');
-          setApiMode(health.mode);
-          setApiReady(health.ready);
-        }
-      })
-      .catch(() => {
-        if (active) setApiStatus('offline');
-      });
-
-    getBrandDashboard(brand)
-      .then(saved => {
-        if (!active) return;
-        if (saved.scan && saved.recommendation) {
-          setScan(saved.scan);
-          setHistory(saved.history);
-          setRec(saved.recommendation);
-          setScanNo(saved.history.scan_history.length);
-          setMode('live');
-        } else {
-          void load(1);
-        }
-      })
-      .catch(() => {
-        if (active) void load(1);
-      });
-
-    return () => {
-      active = false;
-    };
+    // Initial check on load
+    getBrandDashboard(targetBrand).then(saved => {
+      if (saved.scan && saved.recommendation) {
+        setScan(saved.scan);
+        setHistory(saved.history);
+        setRec(saved.recommendation);
+      }
+    }).catch(() => { });
   }, []);
 
   const chart = useMemo(
@@ -211,359 +156,284 @@ export default function App() {
     [scan]
   );
 
-  const shownActions =
-    mode === 'live'
-      ? history?.actions_log ?? []
-      : scanNo < 5
-        ? []
-        : scanNo < 10
-          ? history?.actions_log.slice(0, Math.min(2, Math.floor((scanNo - 1) / 2))) ?? []
-          : history?.actions_log ?? [];
-
   const baselineMentions = history?.scan_history[0]?.mentions ?? scan?.mentions ?? 0;
   const liftMentions = (scan?.mentions ?? baselineMentions) - baselineMentions;
   const maxComp = Math.max(1, ...ranked.map(x => x[1]));
   const citationRate = scan && scan.total_queries ? Math.round((scan.mentions / scan.total_queries) * 100) : 0;
+  const resolvedCategory = inferCategory(targetBrand);
 
   return (
-    <div className="shell">
-      {/* Sidebar */}
-      <aside className={`sidebar ${menu ? 'open' : ''}`}>
-        <div className="brandmark">
-          <div className="brand-icon">
-            <BrainCircuit size={20} />
-          </div>
-          <div>
-            <b>Omneo</b>
-            <small>AEO / GEO VISIBILITY LAB</small>
-          </div>
-          <button className="mobile-close" onClick={() => setMenu(false)} aria-label="Close navigation">
-            ×
-          </button>
+    <div className="app-shell">
+      {/* Editorial Navbar */}
+      <header className="site-nav">
+        <div className="brand-link" onClick={() => setView('landing')}>
+          <div className="brand-mark">O</div>
+          <span className="brand-name">Omneo</span>
+          <span className="brand-badge">AEO INTEL</span>
         </div>
 
-        <div className="nav-label">COMMAND WORKSPACE</div>
-        <nav>
-          <a className="nav-item active" href="#overview">
-            <Activity size={15} />
-            Executive Overview
-            <span className="nav-active-dot" />
-          </a>
-          <a className="nav-item" href="#history">
-            <TrendingUp size={15} />
-            Citation Trajectory
-          </a>
-          <a className="nav-item" href="#memory">
-            <Database size={15} />
-            Hindsight Memory Vault
-          </a>
+        <nav className="nav-links">
+          <a href="#paradigm" className="nav-link" onClick={() => setView('landing')}>The Paradigm</a>
+          <a href="#how-it-works" className="nav-link" onClick={() => setView('landing')}>How AEO Works</a>
+          <a href="#pricing" className="nav-link" onClick={() => setView('landing')}>Intelligence Suite</a>
         </nav>
 
-        <div className="loop-card">
-          <div className="loop-title">
-            <Zap size={13} /> COMPOUNDING INTELLIGENCE
-          </div>
-          <p>Each scan indexes brand deltas into the Hindsight memory layer for continuous recommendation optimization.</p>
-          <div className="loop-route">
-            <span>Audit</span>
-            <i>→</i>
-            <span>Retain</span>
-            <i>→</i>
-            <span>Displace</span>
-          </div>
-          <div className="loop-connected">
-            <i /> Memory layer active
-          </div>
-        </div>
-
-        <div className="sidebar-bottom">
-          <div className="workspace-avatar">OM</div>
-          <div>
-            <b>Omneo Core</b>
-            <small>v1.4 Institutional</small>
-          </div>
-          <ShieldCheck size={14} style={{ marginLeft: 'auto', color: 'var(--accent-lime)' }} />
-        </div>
-      </aside>
-
-      {/* Main Container */}
-      <main id="overview" className="main">
-        {/* Topbar */}
-        <header className="topbar">
-          <div className="topbar-left">
-            <button className="menu-toggle" onClick={() => setMenu(!menu)} aria-label="Toggle navigation">
-              <Menu size={18} />
-            </button>
-            <span className={`status-dot ${apiStatus === 'offline' || !apiReady ? 'offline' : ''}`} />
-            <span className="crumb-muted">
-              {apiStatus === 'online' ? 'Engine live' : apiStatus === 'offline' ? 'API offline' : 'Connecting'}
-            </span>
-            <span className="slash">/</span>
-            <span className="topbar-badge-omneo">Omneo Intelligence System</span>
-          </div>
-
-          <div className="header-right">
-            <div className="engine-chips">
-              {MONITORED_ENGINES.map(eng => (
-                <div className={`engine-chip ${eng.active ? 'active' : ''}`} key={eng.name}>
-                  <i />
-                  <span>{eng.name}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className={`demo-badge ${apiStatus === 'offline' || !apiReady ? 'api-offline' : ''}`}>
-              {apiStatus === 'checking'
-                ? 'INITIALIZING'
-                : apiStatus === 'offline'
-                  ? 'BACKEND OFFLINE'
-                  : apiMode === 'live'
-                    ? apiReady
-                      ? 'LIVE SEARCH ACTIVE'
-                      : 'PROVIDER KEYS NEEDED'
-                    : 'MOCK SEARCH MODE'}
-            </div>
-
-            <button
-              className="teardown-trigger-btn"
-              onClick={() => setTeardownOpen(true)}
-              title="Generate Executive Audit Card for sharing or video breakdown"
-            >
+        <button
+          className="nav-cta"
+          onClick={() => {
+            if (view === 'dashboard') {
+              setTeardownOpen(true);
+            } else {
+              void handleSearch(targetBrand);
+            }
+          }}
+        >
+          {view === 'dashboard' ? (
+            <>
               <Share2 size={13} />
               <span>Export Audit</span>
-            </button>
-          </div>
-        </header>
+            </>
+          ) : (
+            <>
+              <Sparkles size={13} />
+              <span>Live Audit</span>
+            </>
+          )}
+        </button>
+      </header>
 
-        {/* Content Body */}
-        <div className="content">
+      {/* =========================================================
+          VIEW 1: LANDING PAGE
+          ========================================================= */}
+      {view === 'landing' && (
+        <main className="landing-container">
           {/* Hero Section */}
-          <section className="hero">
-            <div className="eyebrow">
-              AEO & GENERATIVE SEARCH INTELLIGENCE <span />
+          <section className="hero-section">
+            <div className="hero-pill">
+              <span className="hero-pill-dot" />
+              <span>THE GENERATIVE SEARCH SHIFT</span>
             </div>
-            <h1>Does AI Recommend Your Brand?</h1>
-            <div className="hero-bottom">
-              <p>
-                Analyze real-time answer citations across Perplexity, ChatGPT, and Claude. Identify where competitors are displacing your market share and run memory-guided action steps.
-              </p>
-              <div className={`workspace-state ${apiStatus === 'offline' || !apiReady ? 'offline' : ''}`}>
-                <i />
-                <span>
-                  {apiStatus === 'offline'
-                    ? 'ENGINE OFFLINE'
-                    : apiStatus === 'checking'
-                      ? 'CONNECTING'
-                      : !apiReady
-                        ? 'KEYS REQUIRED'
-                        : 'AEO SYSTEM ONLINE'}
-                </span>
-                <span />
-                <Clock3 size={13} />
-                <span>{loading ? 'Executing scan…' : mode === 'live' ? 'Brand memory indexed' : 'Benchmark dataset'}</span>
+
+            <h1 className="hero-title">
+              Does AI recommend your brand, or are competitors <em>stealing the citation?</em>
+            </h1>
+
+            <p className="hero-sub">
+              Users no longer scroll 10 blue links. They ask Perplexity and ChatGPT for the single best choice. Omneo measures your generative engine citation share and reveals how to win the recommendation.
+            </p>
+
+            {/* Single-Input Search Box (Peak Simplicity) */}
+            <div className="search-box-wrapper">
+              <form className="search-box" onSubmit={handleFormSubmit}>
+                <div className="search-icon-wrap">
+                  <Search size={18} />
+                </div>
+                <input
+                  type="text"
+                  className="search-input"
+                  placeholder="Enter your brand name (e.g. Notion, Linear, Figma, Nike)..."
+                  value={targetBrand}
+                  onChange={e => setTargetBrand(e.target.value)}
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className="search-submit-btn"
+                  disabled={loading || !targetBrand.trim()}
+                >
+                  {loading ? 'Analyzing Citations…' : 'Run Free AEO Audit →'}
+                </button>
+              </form>
+
+              {/* Sample Chips */}
+              <div className="samples-bar">
+                <span className="samples-label">BENCHMARK EXAMPLES:</span>
+                {SAMPLE_BRANDS.map(sample => (
+                  <button
+                    key={sample.brand}
+                    className="sample-chip"
+                    onClick={() => {
+                      setTargetBrand(sample.brand);
+                      void handleSearch(sample.brand);
+                    }}
+                  >
+                    {sample.brand}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Benchmark Preset Bar */}
-            <div className="presets-bar">
-              <span className="presets-label">QUICK BENCHMARKS:</span>
-              {BENCHMARK_PRESETS.map(item => (
-                <button
-                  key={item.brand}
-                  className={`preset-chip ${brand.toLowerCase() === item.brand.toLowerCase() ? 'active' : ''}`}
-                  onClick={() => applyPreset(item)}
-                >
-                  ⚡ {item.brand}
-                </button>
-              ))}
+            {/* Answer Engine Coverage Banner */}
+            <div className="engines-proof-banner">
+              <span className="engines-proof-label">CONTINUOUSLY AUDITING:</span>
+              <div className="engine-tags-row">
+                {MONITORED_ENGINES.map(engine => (
+                  <div key={engine} className="engine-tag">
+                    <span />
+                    <span>{engine}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
 
-          {/* Control Form Card */}
-          <section className="control-card">
-            <div className="brand-fields">
-              <label>
-                TARGET BRAND
-                <input
-                  aria-label="Brand"
-                  value={brand}
-                  onChange={e => {
-                    setBrand(e.target.value);
-                    clearDisplayedBrandData();
-                    setError('');
-                  }}
-                  placeholder="e.g. Notion, Linear, Stripe"
-                />
-              </label>
-              <label>
-                MARKET CATEGORY
-                <input
-                  aria-label="Category"
-                  value={category}
-                  onChange={e => {
-                    setCategory(e.target.value);
-                    clearDisplayedBrandData();
-                    setError('');
-                  }}
-                  placeholder="e.g. Project management software"
-                />
-              </label>
-              <button
-                className="scan-button"
-                onClick={() => void runScan()}
-                disabled={loading || !brand.trim() || !category.trim()}
-              >
-                <Play size={13} fill="currentColor" />
-                {loading ? 'Executing Audit…' : 'Run Visibility Scan'}
+          {/* Pillars Section */}
+          <section className="pillars-section" id="paradigm">
+            <div className="section-eyebrow">THE FOUNDATIONAL SHIFT</div>
+            <h2 className="section-heading">Why Traditional SEO Is Failing In 2026</h2>
+
+            <div className="pillars-grid">
+              <article className="pillar-card">
+                <div className="pillar-num">01 / DISCOVERY</div>
+                <h3>The Zero-Click Paradigm</h3>
+                <p>
+                  Search volume is migrating to Answer Engines. When an LLM answers a query directly, ranking #3 on Google drives zero traffic. You either win the synthesized citation, or you are invisible.
+                </p>
+              </article>
+
+              <article className="pillar-card">
+                <div className="pillar-num">02 / DISPLACEMENT</div>
+                <h3>Competitor Erasure</h3>
+                <p>
+                  Generative engines synthesize trust from comparison matrices, Reddit discussions, and domain schema. Competitors who optimize for AEO displace incumbent brands in seconds.
+                </p>
+              </article>
+
+              <article className="pillar-card">
+                <div className="pillar-num">03 / ACTION</div>
+                <h3>The Compounding Playbook</h3>
+                <p>
+                  Omneo monitors your brand across all major models, isolates the exact prompts where competitors are recommended over you, and synthesizes clear editorial directives.
+                </p>
+              </article>
+            </div>
+          </section>
+        </main>
+      )}
+
+      {/* =========================================================
+          VIEW 2: AUDIT DASHBOARD
+          ========================================================= */}
+      {view === 'dashboard' && (
+        <main className="dashboard-container">
+          {/* Header & Navigation */}
+          <div className="dashboard-header">
+            <div>
+              <button className="back-btn" onClick={() => setView('landing')}>
+                <ArrowLeft size={14} />
+                <span>Search another brand</span>
+              </button>
+              <div className="dashboard-brand-info">
+                <h1>{targetBrand}</h1>
+                <span className="category-badge">{resolvedCategory}</span>
+              </div>
+            </div>
+
+            <div className="dashboard-actions">
+              <button className="secondary-action-btn" onClick={() => void handleSearch(targetBrand)}>
+                <Play size={12} fill="currentColor" />
+                <span>{loading ? 'Scanning…' : 'Refresh Audit'}</span>
+              </button>
+              <button className="secondary-action-btn" onClick={() => setTeardownOpen(true)}>
+                <Share2 size={12} />
+                <span>Export Brief</span>
               </button>
             </div>
+          </div>
 
-            {loading && (
-              <div className="scan-progress" role="status">
-                ⚡ Real-time audit in progress: synthesizing queries, gathering multi-engine search evidence, analyzing displacement metrics, and indexing memory precedents...
-              </div>
-            )}
+          {error && <div className="scan-error" role="alert">{error}</div>}
 
-            {apiStatus === 'offline' && (
-              <div className="scan-error" role="status">
-                Backend API offline. Launch the engine in your terminal with <code>python -m integration.api</code>.
-              </div>
-            )}
-
-            {apiMode === 'live' && !apiReady && (
-              <div className="scan-error" role="status">
-                Live mode enabled, but API keys are missing. Configure Groq, Tavily, and Serper in <code>.env</code>.
-              </div>
-            )}
-
-            {error && <div className="scan-error" role="alert">{error}</div>}
-
-            {mode === 'demo' && (
-              <div className="selector-row">
-                <div>
-                  <span className="selector-kicker">COMPOUNDING MEMORY TIMELINE</span>
-                  <p>Experience how the recommendation agent sharpens its strategy from baseline to mature accumulated evidence.</p>
-                </div>
-                <div className="selector-control">
-                  {[1, 5, 10].map(n => (
-                    <button
-                      className={`scan-choice ${scanNo === n ? 'chosen' : ''}`}
-                      key={n}
-                      onClick={() => void load(n)}
-                      aria-pressed={scanNo === n}
-                    >
-                      <span>STAGE</span>
-                      <b>{n}</b>
-                    </button>
-                  ))}
-                  <small>of 10 benchmark cycles</small>
-                </div>
-              </div>
-            )}
-          </section>
-
-          {/* KPI Dashboard */}
-          <section className="kpis" aria-label="Visibility metrics">
-            <article className="kpi kpi-mentions">
-              <div className="kpi-label">
+          {/* KPI Row */}
+          <section className="dash-kpis">
+            <article className="dash-kpi">
+              <div className="dash-kpi-label">
                 CITATION SHARE
-                <Target size={15} />
+                <Target size={14} />
               </div>
-              <div className="kpi-value">
-                {scan?.mentions ?? '—'}
-                <small> / {scan?.total_queries ?? '—'}</small>
-              </div>
-              <div className="kpi-foot">
-                Queries Won · Cycle {scanNo}
-              </div>
-            </article>
-
-            <article className="kpi kpi-visibility">
-              <div className="kpi-label">
-                AEO CITATION INDEX
-                <ArrowUpRight size={15} />
-              </div>
-              <div className="kpi-value">
+              <div className="dash-kpi-val">
                 {scan ? citationRate : '—'}
                 <small>%</small>
               </div>
-              <div className="kpi-foot" style={{ color: liftMentions >= 0 ? 'var(--accent-emerald)' : 'var(--accent-coral)' }}>
-                {liftMentions >= 0 ? '+' : ''}
-                {liftMentions} citations vs. baseline
+              <div className="dash-kpi-foot">
+                {liftMentions >= 0 ? '+' : ''}{liftMentions} vs. baseline benchmark
               </div>
             </article>
 
-            <article className="kpi kpi-competitor">
-              <div className="kpi-label">
-                TOP CATEGORY DISPLACER
-                <Search size={15} />
+            <article className="dash-kpi">
+              <div className="dash-kpi-label">
+                QUERIES WON
+                <ArrowUpRight size={14} />
               </div>
-              <div className="kpi-value word-value">{ranked[0]?.[0] ?? '—'}</div>
-              <div className="kpi-foot">{ranked[0]?.[1] ?? 0} AI answer recommendations</div>
+              <div className="dash-kpi-val">
+                {scan?.mentions ?? 0}
+                <small> / {scan?.total_queries ?? 10}</small>
+              </div>
+              <div className="dash-kpi-foot">Direct AI recommendations</div>
             </article>
 
-            <article className="kpi kpi-current">
-              <div className="kpi-label">
-                MEMORY DEPTH
-                <Database size={15} />
+            <article className="dash-kpi">
+              <div className="dash-kpi-label">
+                PRIMARY DISPLACER
+                <Search size={14} />
               </div>
-              <div className="kpi-value">#{scanNo}</div>
-              <div className="kpi-foot">
-                {mode === 'demo'
-                  ? scanNo === 1
-                    ? 'Initial Baseline'
-                    : scanNo === 5
-                      ? 'Pattern Precedents Indexed'
-                      : 'Compounded Precision'
-                  : `${history?.scan_history.length ?? scanNo} audit cycles stored`}
+              <div className="dash-kpi-val" style={{ fontSize: '26px' }}>
+                {ranked[0]?.[0] ?? 'None'}
               </div>
+              <div className="dash-kpi-foot">
+                {ranked[0]?.[1] ?? 0} category citations
+              </div>
+            </article>
+
+            <article className="dash-kpi">
+              <div className="dash-kpi-label">
+                CATEGORY STATUS
+                <ShieldCheck size={14} />
+              </div>
+              <div className="dash-kpi-val" style={{ fontSize: '22px', color: citationRate >= 60 ? 'var(--accent-sage)' : 'var(--accent-amber)' }}>
+                {citationRate >= 70 ? 'Category Leader' : citationRate >= 40 ? 'Moderate Presence' : 'Citation Deficit'}
+              </div>
+              <div className="dash-kpi-foot">Audited across 5 models</div>
             </article>
           </section>
 
-          {/* Primary Visualization Grid */}
-          <section className="primary-grid" id="history">
-            {/* Trend Chart */}
-            <article className="panel chart-panel">
-              <div className="panel-title">
+          {/* Main Visuals: Chart + Competitor Displacement */}
+          <section className="dash-main-grid">
+            {/* Chart */}
+            <article className="dash-card">
+              <div className="dash-card-head">
                 <div>
-                  <h2>
-                    <Activity size={15} />
-                    Citation Lift Over Time
-                  </h2>
-                  <p>{mode === 'live' ? 'Historical citation retention for this brand' : 'Progression across staged AI answer iterations'}</p>
+                  <h2>Citation Retention Over Time</h2>
+                  <p>Progression of brand recommendation across iterative answer runs</p>
                 </div>
-                <div className="lift-pill">
-                  <span>NET LIFT</span>
-                  <b>{liftMentions >= 0 ? '+' : ''}{liftMentions} citations</b>
-                </div>
+                <span className="brand-badge">CYCLE #{scanNo}</span>
               </div>
 
-              <div className="chart-wrap">
+              <div className="chart-area">
                 {chart && (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chart} margin={{ top: 14, right: 12, bottom: 0, left: -19 }}>
-                      <CartesianGrid stroke="rgba(255, 255, 255, 0.05)" vertical={false} strokeDasharray="3 4" />
+                    <LineChart data={chart} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                      <CartesianGrid stroke="#eae5d9" vertical={false} strokeDasharray="3 4" />
                       <XAxis
                         dataKey="scan"
                         tickFormatter={v => `S${v}`}
-                        tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'JetBrains Mono' }}
+                        tick={{ fill: '#8c909c', fontSize: 10, fontFamily: 'JetBrains Mono' }}
                         axisLine={false}
                         tickLine={false}
-                        dy={9}
+                        dy={6}
                       />
                       <YAxis
                         domain={[0, 10]}
                         ticks={[0, 2, 4, 6, 8, 10]}
-                        tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'JetBrains Mono' }}
+                        tick={{ fill: '#8c909c', fontSize: 10, fontFamily: 'JetBrains Mono' }}
                         axisLine={false}
                         tickLine={false}
                       />
                       <Tooltip
                         content={({ active, payload, label }) =>
                           active && payload?.length ? (
-                            <div className="chart-tooltip">
-                              <small>CYCLE {label}</small>
-                              <b>{payload[0].value} citations recorded</b>
+                            <div style={{ background: '#121316', color: '#fff', padding: '8px 12px', borderRadius: '8px', fontSize: '11px', fontFamily: 'JetBrains Mono' }}>
+                              <span>CYCLE {label}: </span>
+                              <b>{payload[0].value} citations</b>
                             </div>
                           ) : null
                         }
@@ -571,280 +441,169 @@ export default function App() {
                       <Line
                         type="monotone"
                         dataKey="mentions"
-                        stroke="#ccff00"
-                        strokeWidth={2.8}
-                        dot={({ cx, cy, payload }) => (
-                          <circle
-                            cx={cx}
-                            cy={cy}
-                            r={payload.selected ? 6 : 3.5}
-                            fill={payload.selected ? '#ccff00' : '#07080b'}
-                            stroke={payload.selected ? '#ffffff' : '#ccff00'}
-                            strokeWidth={payload.selected ? 2.5 : 2}
-                          />
-                        )}
-                        activeDot={{ r: 6, fill: '#ccff00', stroke: '#ffffff', strokeWidth: 2 }}
+                        stroke="#121316"
+                        strokeWidth={2.5}
+                        dot={{ r: 4, fill: '#121316', stroke: '#fff', strokeWidth: 2 }}
+                        activeDot={{ r: 6, fill: '#c26d27', stroke: '#fff', strokeWidth: 2 }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
                 )}
               </div>
-
-              <div className="chart-footer">
-                <span>Cycle 1 · Baseline</span>
-                <span>
-                  <i /> Inspected: Cycle {scanNo}
-                </span>
-                <span>Cycle {history?.scan_history.length ?? 10} · Latest</span>
-              </div>
             </article>
 
-            {/* Competitor Displacement Panel */}
-            <article className="panel competitor-panel">
-              <div className="panel-title">
+            {/* Competitor Bars */}
+            <article className="dash-card">
+              <div className="dash-card-head">
                 <div>
-                  <h2>
-                    <Activity size={15} />
-                    Competitive Displacement
-                  </h2>
-                  <p>Share of citations across equivalent answer queries</p>
+                  <h2>Competitor Displacement</h2>
+                  <p>Citations awarded in the same category prompt set</p>
                 </div>
-                <span className="count-pill">/{scan?.total_queries ?? 10} queries</span>
+                <span className="brand-badge">TOP RIVALS</span>
               </div>
 
-              <div className="competitor-list">
+              <div className="comp-list">
                 {ranked.length ? (
-                  ranked.map(([name, value], i) => (
-                    <div className="competitor-row" key={name}>
-                      <div className="competitor-label">
+                  ranked.map(([name, count], idx) => (
+                    <div key={name} className="comp-item">
+                      <div className="comp-header">
                         <span>{name}</span>
-                        <small>{value} citations</small>
+                        <small>{count} citations</small>
                       </div>
-                      <div className="bar-track">
-                        <span
-                          className={i === 0 ? 'bar-leader' : ''}
-                          style={{ width: `${(value / maxComp) * 100}%` }}
+                      <div className="comp-bar-track">
+                        <div
+                          className={`comp-bar-fill ${idx === 0 ? 'leader' : ''}`}
+                          style={{ width: `${(count / maxComp) * 100}%` }}
                         />
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="empty-competitors">No category competitors detected in this scan set.</div>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '12px' }}>No direct rivals identified.</p>
                 )}
               </div>
             </article>
           </section>
 
-          {/* Evidence Grid: Queries + Memory Ledger */}
-          <section className="evidence-grid">
-            {/* Customer Prompts */}
-            <article className="panel query-card">
-              <div className="panel-title">
-                <div>
-                  <h2>
-                    <Search size={15} />
-                    Audited Customer Prompts
-                  </h2>
-                  <p>High-intent query matrix tested across AI models</p>
-                </div>
-                <span className="count-pill">{scan?.queries_tested.length ?? 0} Prompts</span>
-              </div>
-              <ol className="query-list">
-                {scan?.queries_tested.map((q, i) => (
-                  <li key={q}>
-                    <span>{String(i + 1).padStart(2, '0')}</span>
-                    <b>{q}</b>
-                  </li>
-                ))}
-              </ol>
-            </article>
-
-            {/* Hindsight Memory Ledger */}
-            <article className="panel memory-card" id="memory">
-              <div className="panel-title">
-                <div>
-                  <h2>
-                    <History size={15} />
-                    Hindsight Memory Ledger
-                  </h2>
-                  <p>Historical actions & observed citation delta feedback</p>
-                </div>
-                <span className="count-pill">{shownActions.length} Actions</span>
-              </div>
-
-              {shownActions.length ? (
-                <div className="timeline">
-                  {shownActions.map(a => (
-                    <article className="timeline-item" key={a.date}>
-                      <div className="timeline-marker" />
-                      <div className="action-card">
-                        <div className="action-head">
-                          <b>{a.action}</b>
-                          <time>{a.date}</time>
-                        </div>
-                        <p>{a.outcome_summary}</p>
-                        <span className="delta">
-                          {a.visibility_delta > 0 ? '+' : ''}
-                          {a.visibility_delta} {Math.abs(a.visibility_delta) === 1 ? 'citation' : 'citations'}
-                        </span>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <div className="empty-memory">
-                  <b>No precedent actions logged for {brand} yet</b>
-                  <p>Log your digital actions and citation outcomes below to train the recommendation engine.</p>
-                </div>
-              )}
-
-              {mode === 'live' && (
-                <form className="action-form" onSubmit={recordAction}>
-                  <label>
-                    Action Implemented
-                    <input
-                      value={actionText}
-                      onChange={e => setActionText(e.target.value)}
-                      placeholder="e.g. Published high-authority LLM comparison matrix"
-                      required
-                    />
-                  </label>
-                  <label>
-                    Observed Search Impact
-                    <input
-                      value={outcomeText}
-                      onChange={e => setOutcomeText(e.target.value)}
-                      placeholder="e.g. Perplexity cited section 4 in top 3 answers"
-                      required
-                    />
-                  </label>
-                  <div className="action-form-bottom">
-                    <label>
-                      Citation Delta
-                      <input
-                        type="number"
-                        step="1"
-                        value={visibilityDelta}
-                        onChange={e => setVisibilityDelta(e.target.value)}
-                        required
-                      />
-                    </label>
-                    <button type="submit" disabled={savingAction || !actionText.trim() || !outcomeText.trim()}>
-                      {savingAction ? 'Indexing…' : 'Record to Hindsight'}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </article>
-          </section>
-
-          {/* Executive Recommendation Memo */}
-          <section className="recommendation">
-            <div className="rec-top">
-              <span className="rec-spark">✣</span>
-              <span>STRATEGIC ACTION DIRECTIVE</span>
-              <small>Synthesis for Cycle #{scanNo}</small>
-            </div>
-            <h2>{rec?.recommendation ?? 'Generating strategic recommendation…'}</h2>
-            <div className="rec-bottom">
-              <div>
-                <span>PRECEDENT CITATION EVIDENCE</span>
-                <p>{rec?.based_on_past_action ?? 'Baseline initial directive — awaiting historical action records'}</p>
-              </div>
-              <div className="confidence">
-                <span>CONFIDENCE RATING</span>
-                <p>{rec?.confidence_note ?? 'Institutional standard'}</p>
-              </div>
+          {/* Strategic Directive Memo */}
+          <section className="directive-card">
+            <span className="directive-badge">AEO STRATEGIC DIRECTIVE</span>
+            <h2>{rec?.recommendation ?? 'Review citation distribution and publish high-authority comparison matrices to capture engine recommendations.'}</h2>
+            <div className="directive-footer">
+              <span><strong>Precedent:</strong> {rec?.based_on_past_action ?? 'Baseline recommendation from category analysis'}</span>
+              <span><strong>Confidence:</strong> {rec?.confidence_note ?? 'Standard evaluation'}</span>
             </div>
           </section>
 
-          {/* Raw AI Response Drawer */}
-          <section className="snippets panel">
-            <button className="snippets-toggle" onClick={() => setSnippets(!snippets)} aria-expanded={snippets}>
+          {/* Customer Prompts */}
+          <section className="prompts-card">
+            <div className="dash-card-head">
               <div>
-                <h2>
-                  <Layers3 size={15} />
-                  Raw Generative Search Snippets <span>{scan?.raw_snippets.length ?? 0}</span>
-                </h2>
+                <h2>Audited Customer Queries</h2>
+                <p>Real-world conversational prompts tested across answer engines</p>
               </div>
-              <ChevronDown size={15} className={snippets ? 'rotated' : ''} />
+              <span className="brand-badge">{scan?.queries_tested.length ?? 0} PROMPTS</span>
+            </div>
+
+            <ol className="prompts-list">
+              {scan?.queries_tested.map((prompt, i) => (
+                <li key={prompt} className="prompt-item">
+                  <span className="prompt-num">0{i + 1}</span>
+                  <span className="prompt-text">{prompt}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          {/* Raw AI Snippets Accordion */}
+          <section className="dash-card" style={{ marginBottom: '30px' }}>
+            <button
+              onClick={() => setSnippets(!snippets)}
+              style={{ width: '100%', background: 'transparent', border: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: 0 }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Layers3 size={15} />
+                <h2 style={{ fontSize: '14px', margin: 0, fontWeight: 700 }}>Inspect Raw Engine Snippets ({scan?.raw_snippets.length ?? 0})</h2>
+              </div>
+              <ChevronDown size={16} style={{ transform: snippets ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
             </button>
+
             {snippets && (
-              <div className="snippet-body">
-                {scan?.raw_snippets.map((s, i) => (
-                  <article key={s}>
-                    <span>ENGINE CITATION 0{i + 1}</span>
-                    <p>“{s}”</p>
-                  </article>
+              <div style={{ marginTop: '16px', display: 'grid', gap: '10px' }}>
+                {scan?.raw_snippets.map((snip, i) => (
+                  <div key={snip} style={{ background: 'var(--bg-canvas-subtle)', padding: '12px 14px', borderRadius: '8px', fontSize: '13px', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                    <small style={{ display: 'block', fontFamily: 'JetBrains Mono', fontSize: '10px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                      ENGINE RESPONSE #{i + 1}
+                    </small>
+                    “{snip}”
+                  </div>
                 ))}
               </div>
             )}
           </section>
+        </main>
+      )}
 
-          {/* Footer */}
-          <footer className="footer">
-            <span>OMNEO AEO INTELLIGENCE PLATFORM · {mode === 'live' ? 'CONNECTED MULTI-ENGINE PIPELINE' : 'BENCHMARK MEMORY SUITE'}</span>
-            <span>
-              {mode === 'live'
-                ? loading
-                  ? `${apiMode === 'mock' ? 'Simulated multi-engine audit' : 'Live provider search'} · in progress`
-                  : `${apiMode === 'mock' ? 'Simulated multi-engine audit' : 'Live provider search'} · indexed in Hindsight`
-                : 'Verified benchmark data ready for presentation'}
-            </span>
-          </footer>
-        </div>
-      </main>
-
-      {/* Executive Teardown Modal (For Screen Recordings, TikTok, Reels & LinkedIn) */}
+      {/* Executive Teardown Modal */}
       {teardownOpen && (
-        <div className="teardown-modal-overlay" onClick={() => setTeardownOpen(false)}>
-          <div className="teardown-card" onClick={e => e.stopPropagation()}>
-            <button className="teardown-modal-close" onClick={() => setTeardownOpen(false)} aria-label="Close modal">
-              <X size={16} />
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(18, 19, 22, 0.65)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', padding: '20px' }}
+          onClick={() => setTeardownOpen(false)}
+        >
+          <div
+            style={{ width: '100%', maxWidth: '580px', background: '#ffffff', borderRadius: '18px', padding: '32px', boxShadow: '0 24px 60px rgba(18, 19, 22, 0.2)', position: 'relative' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setTeardownOpen(false)}
+              style={{ position: 'absolute', top: '20px', right: '20px', background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--text-muted)' }}
+            >
+              <X size={18} />
             </button>
 
-            <span className="teardown-badge">
-              <ShieldCheck size={12} /> OMNEO VERIFIED AUDIT
-            </span>
+            <span className="directive-badge">OMNEO EXECUTIVE BRIEF</span>
+            <h3 style={{ fontSize: '26px', fontWeight: 800, margin: '8px 0 4px', letterSpacing: '-0.03em' }}>{targetBrand}</h3>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono' }}>CATEGORY: {resolvedCategory}</span>
 
-            <h3>{brand} vs. The Category</h3>
-            <span className="category-tag">MARKET: {category}</span>
-
-            <div className="teardown-metrics-row">
-              <div className="teardown-metric">
-                <small>CITATION SHARE</small>
-                <b>{citationRate}%</b>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', margin: '20px 0', padding: '16px', background: 'var(--bg-canvas-subtle)', borderRadius: '12px', textAlign: 'center' }}>
+              <div>
+                <small style={{ display: 'block', fontSize: '10px', fontFamily: 'JetBrains Mono', color: 'var(--text-muted)' }}>CITATION RATE</small>
+                <b style={{ fontSize: '24px', fontFamily: 'JetBrains Mono' }}>{citationRate}%</b>
               </div>
-              <div className="teardown-metric">
-                <small>QUERIES WON</small>
-                <b>{scan?.mentions ?? 0}/{scan?.total_queries ?? 10}</b>
+              <div>
+                <small style={{ display: 'block', fontSize: '10px', fontFamily: 'JetBrains Mono', color: 'var(--text-muted)' }}>QUERIES WON</small>
+                <b style={{ fontSize: '24px', fontFamily: 'JetBrains Mono' }}>{scan?.mentions ?? 0}/{scan?.total_queries ?? 10}</b>
               </div>
-              <div className="teardown-metric">
-                <small>TOP DISPLACER</small>
-                <b style={{ color: 'var(--accent-coral)', fontSize: '18px' }}>
-                  {ranked[0]?.[0] ?? 'None'}
-                </b>
+              <div>
+                <small style={{ display: 'block', fontSize: '10px', fontFamily: 'JetBrains Mono', color: 'var(--text-muted)' }}>TOP RIVAL</small>
+                <b style={{ fontSize: '18px', color: 'var(--accent-coral)' }}>{ranked[0]?.[0] ?? 'None'}</b>
               </div>
             </div>
 
-            <div className="teardown-verdict">
-              <span>EXECUTIVE VERDICT:</span>
-              <p>{rec?.recommendation ?? 'Awaiting scan evaluation...'}</p>
+            <div style={{ padding: '14px 16px', background: 'var(--bg-surface-elevated)', borderLeft: '3px solid var(--accent-amber)', borderRadius: '0 8px 8px 0', marginBottom: '20px', fontSize: '13px', lineHeight: 1.5 }}>
+              <strong>STRATEGIC DIRECTIVE:</strong>
+              <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)' }}>{rec?.recommendation ?? 'Publish structured comparison assets to reverse category deficit.'}</p>
             </div>
 
-            <div className="teardown-footer">
-              <span>AUDITED VIA OMNEO AEO ENGINE · PERPLEXITY / CHATGPT / GEMINI</span>
-              <button className="teardown-copy-btn" onClick={copyTeardownSummary}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono' }}>AUDITED VIA OMNEO AEO</span>
+              <button
+                onClick={copySummary}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '36px', padding: '0 16px', borderRadius: '8px', background: 'var(--text-primary)', color: '#fff', border: 0, fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+              >
                 {copied ? <CheckCircle2 size={13} /> : <Copy size={13} />}
-                <span>{copied ? 'Copied Summary!' : 'Copy Summary'}</span>
+                <span>{copied ? 'Copied Summary' : 'Copy Brief'}</span>
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Mobile Backdrop Scrim */}
-      {menu && <button className="scrim" aria-label="Close navigation" onClick={() => setMenu(false)} />}
+      {/* Editorial Footer */}
+      <footer className="site-footer">
+        <span className="footer-copy">OMNEO · ANSWER ENGINE OPTIMIZATION PLATFORM</span>
+        <span>Monitoring Perplexity, ChatGPT Search, Claude & Gemini</span>
+      </footer>
     </div>
   );
 }

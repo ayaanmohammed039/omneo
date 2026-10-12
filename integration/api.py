@@ -112,7 +112,27 @@ def run_brand_scan(payload: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(brand, str) or not brand.strip():
         raise ValueError("Enter a brand name.")
     if not isinstance(category, str) or not category.strip():
-        raise ValueError("Enter a category.")
+        known_categories = {
+            "notion": "Project management software",
+            "asana": "Project management software",
+            "clickup": "Project management software",
+            "linear": "Issue tracking & software sprint management",
+            "figma": "Collaborative UI design software",
+            "nike": "Performance running shoes & sportswear",
+            "adidas": "Athletic shoes & sportswear",
+            "stripe": "Developer payment processing infrastructure",
+            "shopify": "E-commerce store platform",
+            "apple": "Smartphones & consumer electronics",
+            "samsung": "Smartphones & electronics",
+            "tesla": "Electric vehicles",
+            "spotify": "Audio streaming",
+            "netflix": "Video streaming platform",
+            "zara": "Fashion & apparel",
+            "uniqlo": "Fashion & apparel",
+            "chanel": "Luxury fashion & beauty",
+            "keka": "HR and payroll software",
+        }
+        category = known_categories.get(brand.strip().casefold(), f"{brand.strip()} software and services")
     if not isinstance(count, int) or isinstance(count, bool) or not 1 <= count <= 20:
         raise ValueError("Query count must be between 1 and 20.")
     if not _mock_mode():
